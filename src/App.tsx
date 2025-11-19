@@ -4,9 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Layout from "./pages/base44/Layout";  // ✅ IMPORTANT
-
-const queryClient = new QueryClient();
+import Login from "@/pages/base44/Login";
+import Layout from "@/pages/base44/Layout";
 
 // LINKEDIN
 import LinkedInCallback from "@/pages/linkedin/callback";
@@ -34,6 +33,8 @@ import StripeCheckout from "@/pages/base44/StripeCheckout";
 
 import NotFound from "@/pages/NotFound";
 
+const queryClient = new QueryClient();
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -43,108 +44,26 @@ const App = () => (
       <BrowserRouter>
         <Routes>
 
-          {/* ⭐ WEBSITE PAGES WRAPPED IN LAYOUT ⭐ */}
-          <Route
-            path="/"
-            element={
-              <Layout>
-                <Home />
-              </Layout>
-            }
-          />
+          {/* WEBSITE PAGES */}
+          <Route path="/" element={<Layout><Home /></Layout>} />
+          <Route path="/home" element={<Layout><Home /></Layout>} />
+          <Route path="/about" element={<Layout><About /></Layout>} />
+          <Route path="/services" element={<Layout><Services /></Layout>} />
+          <Route path="/packages" element={<Layout><Packages /></Layout>} />
+          <Route path="/portfolio" element={<Layout><Portfolio /></Layout>} />
+          <Route path="/contact" element={<Layout><Contact /></Layout>} />
+          <Route path="/resources" element={<Layout><Resources /></Layout>} />
+          <Route path="/starter" element={<Layout><StarterPlan /></Layout>} />
+          <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
+          <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          <Route
-            path="/home"
-            element={
-              <Layout>
-                <Home />
-              </Layout>
-            }
-          />
+          {/* AUTH ROUTES */}
+          <Route path="/login" element={<Login />} />
 
-          <Route
-            path="/about"
-            element={
-              <Layout>
-                <About />
-              </Layout>
-            }
-          />
+          {/* 🔥 REQUIRED BY CLERK FOR GOOGLE LOGIN */}
+          <Route path="/login/sso-callback" element={<Login />} />
 
-          <Route
-            path="/services"
-            element={
-              <Layout>
-                <Services />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/packages"
-            element={
-              <Layout>
-                <Packages />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/portfolio"
-            element={
-              <Layout>
-                <Portfolio />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/contact"
-            element={
-              <Layout>
-                <Contact />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/resources"
-            element={
-              <Layout>
-                <Resources />
-              </Layout>
-            }
-          />
-
-          {/* ⭐ PLANS WRAPPED TOO ⭐ */}
-          <Route
-            path="/starter"
-            element={
-              <Layout>
-                <StarterPlan />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/pro"
-            element={
-              <Layout>
-                <ProPlan />
-              </Layout>
-            }
-          />
-
-          <Route
-            path="/checkout"
-            element={
-              <Layout>
-                <StripeCheckout />
-              </Layout>
-            }
-          />
-
-          {/* ⭐ DASHBOARD ROUTES — NO LAYOUT ⭐ */}
+          {/* DASHBOARD */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<LeadsTool />} />
           <Route path="/social" element={<SocialMediaTool />} />
