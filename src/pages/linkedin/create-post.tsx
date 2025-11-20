@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const getUserId = () => {
-  const id = localStorage.getItem("saas_user_id");
-  return { id };
-};
-
-const getLinkedInAuthData = () => {
-  const stored = localStorage.getItem("linkedin_auth_data");
-  return stored ? JSON.parse(stored) : null;
-};
+import { useUser } from "@clerk/clerk-react";
+import { getLinkedInAuthData } from "../../utils/linkedinAuth";
 
 export default function CreatePost() {
   const navigate = useNavigate();
-  const user = getUserId();
+
+  // Clerk user
+  const { user, isSignedIn, isLoaded } = useUser();
+
+  // LinkedIn auth data from local storage
   const linkedin = getLinkedInAuthData();
 
   const [caption, setCaption] = useState("");
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
@@ -27,16 +23,16 @@ export default function CreatePost() {
 
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
-  const [userError, setUserError] = useState(null);
+  const [userError, setUserError] = useState<string | null>(null);
 
   // LinkedIn required
   useEffect(() => {
-    if (!linkedin) {
+    if (isLoaded && isSignedIn && !linkedin) {
       setUserError("You must connect LinkedIn first.");
     }
-  }, [linkedin]);
+  }, [linkedin, isLoaded, isSignedIn]);
 
-  const handleFileChange = (file) => {
+  const handleFileChange = (file: File | null) => {
     setImage(file);
     if (file) {
       if (preview) URL.revokeObjectURL(preview);
@@ -47,13 +43,13 @@ export default function CreatePost() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setUserError(null);
     setResponse(null);
 
-    if (!user?.id) {
+    if (!isSignedIn || !user?.id) {
       setUserError("Missing user ID. Cannot post.");
       return;
     }
@@ -69,7 +65,7 @@ export default function CreatePost() {
     form.append("user_id", user.id);
 
     form.append("caption", caption);
-    form.append("platforms[]", "linkedin"); // ONLY LINKEDIN
+    form.append("platforms[]", "linkedin");
     form.append("post_mode", postMode);
     form.append("use_ai", useAI);
 
@@ -97,31 +93,42 @@ export default function CreatePost() {
 
       const json = await res.json();
       setResponse(json);
-    } catch (err) {
+    } catch (err: any) {
       setUserError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user?.id) {
+  // Clerk still loading
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        Loading user…
+      </div>
+    );
+  }
+
+  // User not signed in
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full p-8 bg-white shadow-xl rounded-2xl text-center border border-red-300">
           <h1 className="text-3xl font-bold text-red-600 mb-4">
-            Access Denied: User Not Found
+            Access Denied: You are not logged in
           </h1>
           <button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/login")}
             className="mt-6 w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
           >
-            Go to Dashboard
+            Go to Login
           </button>
         </div>
       </div>
     );
   }
 
+  // LinkedIn not connected
   if (!linkedin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -177,7 +184,6 @@ export default function CreatePost() {
         )}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Caption */}
           <textarea
             className="w-full p-4 border border-gray-300 rounded-lg"
             placeholder="Write your post..."
@@ -187,7 +193,6 @@ export default function CreatePost() {
             required
           />
 
-          {/* Image Upload */}
           <input
             type="file"
             accept="image/*"
@@ -202,7 +207,6 @@ export default function CreatePost() {
             />
           )}
 
-          {/* Post Mode */}
           <select
             value={postMode}
             onChange={(e) => setPostMode(e.target.value)}
@@ -221,7 +225,6 @@ export default function CreatePost() {
             />
           )}
 
-          {/* AI Toggle */}
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -231,7 +234,6 @@ export default function CreatePost() {
             <span>Use AI to enhance caption</span>
           </label>
 
-          {/* Submit */}
           <button
             disabled={loading}
             className="w-full py-3 text-white bg-blue-600 rounded-lg font-bold hover:bg-blue-700 transition"

@@ -1,6 +1,8 @@
 // ===============================
-// LinkedIn OAuth (N8N + NON-PKCE Version for Standalone Apps)
+// LinkedIn OAuth (Production Safe + Clerk Integrated)
 // ===============================
+
+import { Clerk } from "@clerk/clerk-js";
 
 export interface LinkedInAuthData {
   access_token: string;
@@ -15,35 +17,39 @@ export interface LinkedInAuthData {
 
 export const LINKEDIN_AUTH_STORAGE_KEY = "linkedin_auth_data";
 
-// N8N Webhook URL
+// N8N Workflow URL
 const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
-// LinkedIn OAuth App settings
+// LinkedIn App Credentials
 const LINKEDIN_CLIENT_ID = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
+
+// Final redirect after LinkedIn login
 const REDIRECT_URI = `${window.location.origin}/linkedin/callback`;
 
-// =========================================
-// Helper: Generate random state
-// =========================================
+// Generate State Token
 function generateState(length = 32) {
   const chars =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
+  return [...Array(length)]
+    .map(() => chars[Math.floor(Math.random() * chars.length)])
+    .join("");
 }
 
-// ======================================================
-// STEP 1: Redirect user to LinkedIn OAuth (NO PKCE)
-// ======================================================
-export async function initiateLinkedInAuth(userId: string) {
+// ================================
+// STEP 1 — Start LinkedIn OAuth
+// ================================
+export async function initiateLinkedInAuth() {
+  const clerkUser = window.Clerk?.user;
+
+  if (!clerkUser) {
+    throw new Error("Clerk user not found. User must be logged in.");
+  }
+
+  const userId = clerkUser.id;
   const state = generateState();
 
-  // Store state + user ID
+  // Store only state (NOT USER)
   localStorage.setItem("linkedin_oauth_state", state);
-  localStorage.setItem("linkedin_user_id", userId);
 
   const authUrl =
     "https://www.linkedin.com/oauth/v2/authorization" +
@@ -56,25 +62,26 @@ export async function initiateLinkedInAuth(userId: string) {
   window.location.href = authUrl;
 }
 
-// ======================================================
-// STEP 2: LinkedIn redirects user → Your frontend → N8N
-// ======================================================
+// ===========================================
+// STEP 2 — LinkedIn → Your Frontend → N8N
+// ===========================================
 export async function completeLinkedInAuth() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const returnedState = params.get("state");
 
   const storedState = localStorage.getItem("linkedin_oauth_state");
-  const userId = localStorage.getItem("linkedin_user_id");
-
-  if (!code) throw new Error("No authorization code returned from LinkedIn");
-  if (returnedState !== storedState)
-    throw new Error("Invalid OAuth state value");
-
-  // Clear temporary state
   localStorage.removeItem("linkedin_oauth_state");
 
-  // Call N8N workflow
+  if (!code) throw new Error("No authorization code returned from LinkedIn");
+  if (storedState !== returnedState)
+    throw new Error("Invalid OAuth state value");
+
+  const clerkUser = window.Clerk?.user;
+  if (!clerkUser) throw new Error("Clerk user missing.");
+  const userId = clerkUser.id;
+
+  // Send to N8N
   const res = await fetch(`${N8N_URL}/oauth-callback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -83,17 +90,18 @@ export async function completeLinkedInAuth() {
       code,
       state: returnedState,
       user_id: userId,
-      redirect_uri: REDIRECT_URI, // IMPORTANT: Must match LinkedIn app
+      redirect_uri: REDIRECT_URI,
     }),
   });
 
   if (!res.ok) {
-    console.error(await res.text());
-    throw new Error("OAuth callback failed");
+    const text = await res.text();
+    console.error(text);
+    throw new Error("OAuth callback failed.");
   }
 
-  const data = await res.json();
-  const authData = data.linkedin_auth_data;
+  const json = await res.json();
+  const authData = json.linkedin_auth_data;
 
   if (!authData) throw new Error("Invalid response from OAuth callback");
 
@@ -102,9 +110,9 @@ export async function completeLinkedInAuth() {
   return authData;
 }
 
-// ======================================================
+// ===========================================
 // Local Storage Helpers
-// ======================================================
+// ===========================================
 export function saveLinkedInAuthData(data: LinkedInAuthData): void {
   localStorage.setItem(LINKEDIN_AUTH_STORAGE_KEY, JSON.stringify(data));
 }
@@ -114,10 +122,10 @@ export function getLinkedInAuthData(): LinkedInAuthData | null {
   return stored ? JSON.parse(stored) : null;
 }
 
-export function isLinkedInConnected(): boolean {
-  return localStorage.getItem(LINKEDIN_AUTH_STORAGE_KEY) !== null;
-}
-
 export function clearLinkedInAuthData(): void {
   localStorage.removeItem(LINKEDIN_AUTH_STORAGE_KEY);
+}
+
+export function isLinkedInConnected(): boolean {
+  return !!localStorage.getItem(LINKEDIN_AUTH_STORAGE_KEY);
 }
