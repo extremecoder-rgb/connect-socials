@@ -30,7 +30,7 @@ export default function ConnectedAccounts({ user }) {
     setLinkedinData(getLinkedInAuthData());
   }, []);
 
-  // After OAuth: refresh UI & clean URL
+  // Clean URL after OAuth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("linkedin") === "connected") {
@@ -45,12 +45,11 @@ export default function ConnectedAccounts({ user }) {
   const startLinkedIn = () => {
     setLoadingPlatform("linkedin");
 
-    // Clear old OAuth junk
+    // Clear old OAuth leftovers
     localStorage.removeItem("linkedin_oauth_state");
     localStorage.removeItem("linkedin_user_id");
 
-    const userId = localStorage.getItem("saas_user_id");
-    initiateLinkedInAuth(userId);
+    initiateLinkedInAuth(); // FIX: Clerk handles user ID
   };
 
   const disconnectLinkedIn = () => {
@@ -59,7 +58,7 @@ export default function ConnectedAccounts({ user }) {
   };
 
   // --------------------------
-  // FAKE CONNECT FOR OTHERS
+  // Fake connect (other platforms)
   // --------------------------
   const fakeConnect = (id) => {
     setLoadingPlatform(id);
@@ -79,7 +78,7 @@ export default function ConnectedAccounts({ user }) {
   };
 
   // --------------------------
-  // PLATFORM LIST
+  // PLATFORMS
   // --------------------------
   const accounts = [
     {
@@ -110,14 +109,14 @@ export default function ConnectedAccounts({ user }) {
       bgColor: "bg-gray-50",
     },
 
-    // ⭐ REAL LINKEDIN AUTH ⭐
+    // REAL LINKEDIN AUTH
     {
       id: "linkedin",
       name: "LinkedIn",
       icon: Linkedin,
       connected: isLinkedInConnected(),
       displayName: linkedinData
-        ? `${linkedinData.firstName} ${linkedinData.lastName}`
+        ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
         : null,
       color: "text-blue-700",
       bgColor: "bg-blue-50",
@@ -163,22 +162,13 @@ export default function ConnectedAccounts({ user }) {
 
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
           {accounts.map((account) => {
-            const connected =
-              account.id === "linkedin"
-                ? isLinkedInConnected()
-                : account.connected;
-
-            const displayName =
-              account.id === "linkedin"
-                ? account.displayName
-                : account.displayName;
+            const connected = account.connected;
+            const displayName = account.displayName;
 
             return (
               <Card key={account.id} className="border hover:shadow-md">
                 <CardContent className="p-4">
-
                   <div className="flex items-start gap-3">
                     <div
                       className={`w-10 h-10 rounded-lg ${account.bgColor} flex items-center justify-center`}
@@ -209,14 +199,13 @@ export default function ConnectedAccounts({ user }) {
                         </p>
                       )}
 
-                      {/* ⭐ SPECIAL UI FOR LINKEDIN ⭐ */}
+                      {/* Special LinkedIn UI */}
                       {account.id === "linkedin" && connected ? (
                         <div className="flex gap-2 mt-2">
-                          {/* Disconnect */}
                           <Button
                             size="sm"
                             variant="outline"
-                            className="w-1/2 text-xs"
+                            className="w-full text-xs"
                             onClick={disconnectLinkedIn}
                             disabled={loadingPlatform === "linkedin"}
                           >
@@ -229,10 +218,8 @@ export default function ConnectedAccounts({ user }) {
                               "Disconnect"
                             )}
                           </Button>
-
                         </div>
                       ) : (
-                        // ⭐ DEFAULT BUTTON FOR OTHER PLATFORMS ⭐
                         <Button
                           size="sm"
                           className={`w-full text-xs ${
@@ -264,7 +251,6 @@ export default function ConnectedAccounts({ user }) {
                       )}
                     </div>
                   </div>
-
                 </CardContent>
               </Card>
             );
