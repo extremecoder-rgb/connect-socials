@@ -6,7 +6,7 @@ export default function Login() {
       <SignIn
         routing="path"
         path="/login"
-        signUpUrl="/login"
+        signUpUrl="/sign-up"
         appearance={{
           elements: {
             socialButtonsBlockButton: "bg-white shadow-md p-3 rounded-lg",
