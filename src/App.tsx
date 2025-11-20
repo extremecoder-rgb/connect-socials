@@ -42,6 +42,7 @@ import AccountSettings from "./pages/base44/AccountSettings";
 
 // Misc
 import NotFound from "./pages/NotFound";
+import SignupPage from "./pages/base44/Signup";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,8 @@ const App = () => (
           {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/login/sso-callback" element={<Login />} />
+          <Route path="/sign-up" element={<SignupPage />} />
+
 
           {/* Dashboard (Protected) */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
