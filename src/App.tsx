@@ -101,8 +101,16 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
           {/* LinkedIn */}
-          <Route path="/linkedin/callback" element={<LinkedInCallback />} />
-          <Route path="/linkedin/create-post" element={<CreatePost />} />
+          <Route
+  path="/linkedin/callback"
+  element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>}
+/>
+
+          <Route
+  path="/linkedin/create-post"
+  element={<ProtectedRoute><CreatePost /></ProtectedRoute>}
+/>
+
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
