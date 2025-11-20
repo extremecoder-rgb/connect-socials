@@ -230,14 +230,6 @@ export default function ConnectedAccounts({ user }) {
                             )}
                           </Button>
 
-                          {/* Create Post */}
-                          <Button
-                            size="sm"
-                            className="w-1/2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => (window.location.href = "/linkedin/create-post")}
-                          >
-                            Create Post
-                          </Button>
                         </div>
                       ) : (
                         // ⭐ DEFAULT BUTTON FOR OTHER PLATFORMS ⭐
