@@ -36,8 +36,8 @@ import CreatePost from "./pages/linkedin/create-post";
 import NotFound from "./pages/NotFound";
 
 // *** FIXED Login & Signup imports ***
-import Login from "./pages/Login";
-import SignupPage from "./pages/SignupPage";
+import Login from "./pages/base44/Login";
+import SignupPage from "./pages/base44/Signup";
 
 const queryClient = new QueryClient();
 
