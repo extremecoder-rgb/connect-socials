@@ -273,10 +273,22 @@ export default function SocialMediaTool(): JSX.Element {
               />
             </div>
 
-            <div>
-              <Label>AI Enhancement</Label>
-              <Switch checked={aiEnhance} onCheckedChange={setAiEnhance} />
-            </div>
+            {/* AI Enhancement Toggle */}
+<div className="flex items-center justify-between py-2">
+  <Label className="text-gray-700 font-medium">AI Enhancement</Label>
+
+  <div className="flex items-center gap-3">
+    <span className="text-sm text-gray-600">
+      {aiEnhance ? "Enabled" : "Disabled"}
+    </span>
+
+    <Switch
+      checked={aiEnhance}
+      onCheckedChange={(state) => setAiEnhance(state)}
+    />
+  </div>
+</div>
+
 
             <div>
               <Label>Optional image</Label>
