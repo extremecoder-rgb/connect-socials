@@ -88,7 +88,8 @@ const App = () => (
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
           {/* ⭐ Facebook Callback (Important) */}
-          <Route path="/facebook/callback" element={<ProtectedRoute><FacebookCallback /></ProtectedRoute>} />
+          <Route path="/facebook/callback" element={<FacebookCallback />} />
+
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
