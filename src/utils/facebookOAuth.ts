@@ -21,7 +21,7 @@ export interface FacebookAuthData {
 export const FACEBOOK_AUTH_STORAGE_KEY = "facebook_auth_data";
 
 // N8N Workflow URL
-const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL_FACEBOOK;
 
 // Facebook App Client ID
 const FACEBOOK_CLIENT_ID = import.meta.env.VITE_FACEBOOK_CLIENT_ID;
