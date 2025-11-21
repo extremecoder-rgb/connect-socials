@@ -24,7 +24,7 @@ const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 const LINKEDIN_CLIENT_ID = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
 
 // Final redirect after LinkedIn login
-const REDIRECT_URI = `${window.location.origin}/linkedin/callback`;
+const REDIRECT_URI = "https://www.smartcontentsolutions.co.uk/facebook/callback";
 
 // Generate State Token
 function generateState(length = 32) {
