@@ -21,35 +21,59 @@ import {
   isLinkedInConnected,
 } from "@/utils/linkedinOAuth";
 
+// ⭐ FACEBOOK IMPORTS
+import {
+  initiateFacebookAuth,
+  getFacebookAuthData,
+  clearFacebookAuthData,
+  isFacebookConnected,
+} from "@/utils/facebookOAuth";
+
 export default function ConnectedAccounts({ user }) {
   const [loadingPlatform, setLoadingPlatform] = useState(null);
+
+  // LINKEDIN STATE
   const [linkedinData, setLinkedinData] = useState(null);
 
-  // Load LinkedIn state
+  // FACEBOOK STATE
+  const [facebookData, setFacebookData] = useState(null);
+
+  // -----------------------------------
+  // LOAD STORED AUTH STATES
+  // -----------------------------------
   useEffect(() => {
     setLinkedinData(getLinkedInAuthData());
+    setFacebookData(getFacebookAuthData());
   }, []);
 
-  // Clean URL after OAuth
+  // -----------------------------------
+  // HANDLE URL CALLBACK CLEANUP
+  // -----------------------------------
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     if (params.get("linkedin") === "connected") {
       setLinkedinData(getLinkedInAuthData());
+    }
+
+    if (params.get("facebook") === "connected") {
+      setFacebookData(getFacebookAuthData());
+    }
+
+    if (params.get("linkedin") || params.get("facebook")) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  // --------------------------
-  // REAL LINKEDIN CONNECT
-  // --------------------------
+  // -----------------------------------
+  // LINKEDIN ACTIONS
+  // -----------------------------------
   const startLinkedIn = () => {
     setLoadingPlatform("linkedin");
-
-    // Clear old OAuth leftovers
     localStorage.removeItem("linkedin_oauth_state");
     localStorage.removeItem("linkedin_user_id");
 
-    initiateLinkedInAuth(); // FIX: Clerk handles user ID
+    initiateLinkedInAuth();
   };
 
   const disconnectLinkedIn = () => {
@@ -57,9 +81,24 @@ export default function ConnectedAccounts({ user }) {
     setLinkedinData(null);
   };
 
-  // --------------------------
-  // Fake connect (other platforms)
-  // --------------------------
+  // -----------------------------------
+  // FACEBOOK ACTIONS
+  // -----------------------------------
+  const startFacebook = () => {
+    setLoadingPlatform("facebook");
+    localStorage.removeItem("facebook_oauth_state");
+
+    initiateFacebookAuth();
+  };
+
+  const disconnectFacebook = () => {
+    clearFacebookAuthData();
+    setFacebookData(null);
+  };
+
+  // -----------------------------------
+  // SIMULATED CONNECT (OTHER PLATFORMS)
+  // -----------------------------------
   const fakeConnect = (id) => {
     setLoadingPlatform(id);
     setTimeout(() => {
@@ -77,19 +116,21 @@ export default function ConnectedAccounts({ user }) {
     }, 800);
   };
 
-  // --------------------------
-  // PLATFORMS
-  // --------------------------
+  // -----------------------------------
+  // PLATFORMS LIST
+  // -----------------------------------
   const accounts = [
+    // ⭐ REAL FACEBOOK AUTH
     {
       id: "facebook",
       name: "Facebook",
       icon: Facebook,
-      connected: user?.facebook_connected,
-      displayName: user?.facebook_display_name,
+      connected: isFacebookConnected(),
+      displayName: facebookData?.name || null,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
+
     {
       id: "instagram",
       name: "Instagram",
@@ -99,6 +140,7 @@ export default function ConnectedAccounts({ user }) {
       color: "text-pink-600",
       bgColor: "bg-pink-50",
     },
+
     {
       id: "x",
       name: "X (Twitter)",
@@ -109,15 +151,16 @@ export default function ConnectedAccounts({ user }) {
       bgColor: "bg-gray-50",
     },
 
-    // REAL LINKEDIN AUTH
+    // ⭐ REAL LINKEDIN AUTH
     {
       id: "linkedin",
       name: "LinkedIn",
       icon: Linkedin,
       connected: isLinkedInConnected(),
-      displayName: linkedinData
-        ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
-        : null,
+      displayName:
+        linkedinData
+          ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
+          : null,
       color: "text-blue-700",
       bgColor: "bg-blue-50",
     },
@@ -131,6 +174,7 @@ export default function ConnectedAccounts({ user }) {
       color: "text-gray-900",
       bgColor: "bg-gray-50",
     },
+
     {
       id: "pinterest",
       name: "Pinterest",
@@ -140,6 +184,7 @@ export default function ConnectedAccounts({ user }) {
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
+
     {
       id: "youtube",
       name: "YouTube",
@@ -151,6 +196,9 @@ export default function ConnectedAccounts({ user }) {
     },
   ];
 
+  // -----------------------------------
+  // RENDER
+  // -----------------------------------
   return (
     <Card className="shadow-lg">
       <CardHeader className="border-b pb-4">
@@ -199,45 +247,56 @@ export default function ConnectedAccounts({ user }) {
                         </p>
                       )}
 
-                      {/* Special LinkedIn UI */}
+                      {/* ⭐ LINKEDIN LOGIC */}
                       {account.id === "linkedin" && connected ? (
-                        <div className="flex gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full text-xs"
-                            onClick={disconnectLinkedIn}
-                            disabled={loadingPlatform === "linkedin"}
-                          >
-                            {loadingPlatform === "linkedin" ? (
-                              <>
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Loading...
-                              </>
-                            ) : (
-                              "Disconnect"
-                            )}
-                          </Button>
-                        </div>
-                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          onClick={disconnectLinkedIn}
+                          disabled={loadingPlatform === "linkedin"}
+                        >
+                          {loadingPlatform === "linkedin" ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Disconnect"
+                          )}
+                        </Button>
+                      ) : account.id === "linkedin" ? (
+                        <Button
+                          size="sm"
+                          className="w-full text-xs bg-blue-600 text-white"
+                          disabled={loadingPlatform === "linkedin"}
+                          onClick={startLinkedIn}
+                        >
+                          {loadingPlatform === "linkedin" ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Connect"
+                          )}
+                        </Button>
+                      ) : null}
+
+                      {/* ⭐ FACEBOOK LOGIC */}
+                      {account.id === "facebook" && (
                         <Button
                           size="sm"
                           className={`w-full text-xs ${
                             !connected &&
                             "bg-gradient-to-r from-blue-500 to-green-500 text-white"
                           }`}
-                          disabled={loadingPlatform === account.id}
+                          disabled={loadingPlatform === "facebook"}
                           onClick={() => {
-                            if (account.id === "linkedin") {
-                              connected ? disconnectLinkedIn() : startLinkedIn();
-                            } else {
-                              connected
-                                ? fakeDisconnect(account.id)
-                                : fakeConnect(account.id);
-                            }
+                            connected ? disconnectFacebook() : startFacebook();
                           }}
                         >
-                          {loadingPlatform === account.id ? (
+                          {loadingPlatform === "facebook" ? (
                             <>
                               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                               Loading...
@@ -249,6 +308,35 @@ export default function ConnectedAccounts({ user }) {
                           )}
                         </Button>
                       )}
+
+                      {/* ⭐ Other Platforms (Simulation) */}
+                      {account.id !== "linkedin" &&
+                        account.id !== "facebook" && (
+                          <Button
+                            size="sm"
+                            className={`w-full text-xs ${
+                              !connected &&
+                              "bg-gradient-to-r from-blue-500 to-green-500 text-white"
+                            }`}
+                            disabled={loadingPlatform === account.id}
+                            onClick={() => {
+                              connected
+                                ? fakeDisconnect(account.id)
+                                : fakeConnect(account.id);
+                            }}
+                          >
+                            {loadingPlatform === account.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Loading...
+                              </>
+                            ) : connected ? (
+                              "Disconnect"
+                            ) : (
+                              "Connect"
+                            )}
+                          </Button>
+                        )}
                     </div>
                   </div>
                 </CardContent>
