@@ -9,17 +9,13 @@ import {
   getFacebookAuthData,
   isFacebookConnected,
   clearFacebookAuthData,
-  type FacebookAuthData
+  type FacebookAuthData,
 } from "@/utils/facebookOAuth";
 import { toast } from "sonner";
-import { useAuth } from "@clerk/clerk-react";
 
 export function FacebookConnectButton() {
   const [authData, setAuthData] = useState<FacebookAuthData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Clerk user
-  const { userId, isLoaded } = useAuth();
 
   useEffect(() => {
     const stored = getFacebookAuthData();
@@ -27,20 +23,20 @@ export function FacebookConnectButton() {
   }, []);
 
   const handleConnect = async () => {
-    if (!isLoaded) return;
-    if (!userId) {
-      toast.error("You must be logged in to connect Facebook.");
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // PASS CLERK USER ID (CRITICAL FIX)
-      initiateFacebookAuth(userId);
-      // Redirect happens instantly
-    } catch (err) {
+      // Ensure Clerk user exists before initiating.
+      const clerkUser = (window as any).Clerk?.user;
+      if (!clerkUser) {
+        toast.error("You must be logged in to connect Facebook.");
+        setIsLoading(false);
+        return;
+      }
+      await initiateFacebookAuth();
+      // the call will redirect browser to FB; no code after here normally executes
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to start Facebook auth");
+      toast.error(err?.message ?? "Failed to start Facebook auth");
       setIsLoading(false);
     }
   };
@@ -51,7 +47,6 @@ export function FacebookConnectButton() {
     toast.success("Facebook disconnected");
   };
 
-  // Already connected UI
   if (authData && isFacebookConnected()) {
     return (
       <Card className="p-8 max-w-2xl mx-auto">
@@ -89,11 +84,9 @@ export function FacebookConnectButton() {
           <h4 className="font-medium mb-2">Pages</h4>
           <div className="space-y-1 text-sm text-muted-foreground">
             {authData.pages && authData.pages.length > 0 ? (
-              authData.pages.map((p) => (
-                <div key={p.id}>• {p.name}</div>
-              ))
+              authData.pages.map((p) => <div key={p.id}>• {p.name}</div>)
             ) : (
-              <div>No pages found.</div>
+              <div>No pages found or page tokens not available.</div>
             )}
           </div>
         </div>
@@ -101,7 +94,6 @@ export function FacebookConnectButton() {
     );
   }
 
-  // Not connected UI
   return (
     <Card className="p-8 max-w-2xl mx-auto text-center">
       <div className="mb-6">
@@ -110,14 +102,12 @@ export function FacebookConnectButton() {
         </div>
 
         <h2 className="text-3xl font-bold mb-2">Connect Your Facebook</h2>
-        <p className="text-muted-foreground">
-          Enable posting to Facebook Pages and sync your profile info.
-        </p>
+        <p className="text-muted-foreground">Enable posting to Facebook Pages and profile sync.</p>
       </div>
 
       <Button
         onClick={handleConnect}
-        disabled={isLoading || !isLoaded}
+        disabled={isLoading}
         size="lg"
         className="gap-2 text-lg px-8 py-6 bg-blue-600 text-white"
       >

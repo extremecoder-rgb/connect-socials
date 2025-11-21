@@ -2,54 +2,51 @@
 import { useEffect, useState } from "react";
 import { completeFacebookAuth } from "@/utils/facebookOAuth";
 import { useNavigate } from "react-router-dom";
-import { ClerkLoaded, ClerkLoading, useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 export default function FacebookCallback() {
   const [status, setStatus] = useState("Connecting your Facebook account...");
   const navigate = useNavigate();
-  const { isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
-    if (!isLoaded) return; // wait for Clerk!
-
+    let mounted = true;
     async function finishAuth() {
       try {
-        if (!isSignedIn) {
-          setStatus("You must be logged in before connecting Facebook.");
-          return;
-        }
-
         setStatus("Completing Facebook authentication...");
 
         const auth = await completeFacebookAuth();
 
-        setStatus("Facebook connected! Redirecting...");
+        if (!auth) {
+          setStatus("Something went wrong. No data returned.");
+          toast.error("Facebook connection failed: no data returned.");
+          return;
+        }
 
-        setTimeout(() => navigate("/dashboard"), 800);
-      } catch (err) {
+        if (!mounted) return;
+        setStatus("Facebook connected! Redirecting...");
+        toast.success("Facebook connected");
+
+        // small delay so the user sees success
+        setTimeout(() => navigate("/dashboard"), 700);
+      } catch (err: any) {
         console.error("Facebook callback error:", err);
-        setStatus(err.message);
+        setStatus("Authentication failed. Please try again.");
+        toast.error(`Facebook callback error: ${err?.message ?? err}`);
       }
     }
 
     finishAuth();
-  }, [isLoaded, isSignedIn]); // wait for Clerk
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
 
   return (
-    <>
-      <ClerkLoading>
-        <div className="h-screen flex items-center justify-center text-xl">
-          Loading authentication...
-        </div>
-      </ClerkLoading>
-
-      <ClerkLoaded>
-        <div className="flex flex-col items-center justify-center h-screen p-4 text-center">
-          <h1 className="text-2xl font-bold mb-4">Facebook Authentication</h1>
-          <p className="text-lg opacity-80">{status}</p>
-          <div className="mt-6 animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-        </div>
-      </ClerkLoaded>
-    </>
+    <div className="flex flex-col items-center justify-center h-screen p-4 text-center">
+      <h1 className="text-2xl font-bold mb-4">Facebook Authentication</h1>
+      <p className="text-lg opacity-80">{status}</p>
+      <div className="mt-6 animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+    </div>
   );
 }
