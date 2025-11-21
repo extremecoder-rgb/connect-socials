@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { getLinkedInAuthData } from "@/utils/linkedinOAuth";
+import { getFacebookAuthData } from "@/utils/facebookOAuth";
 
 type Platform = {
   id: string;
@@ -67,6 +68,7 @@ export default function SocialMediaTool(): JSX.Element {
   const { user, isSignedIn, isLoaded } = useUser();
 
   const linkedin = getLinkedInAuthData();
+  const facebook = getFacebookAuthData();
 
   const [loading, setLoading] = useState(false);
   const [caption, setCaption] = useState("");
@@ -89,7 +91,7 @@ export default function SocialMediaTool(): JSX.Element {
   // CONNECTED PLATFORM DETECTION
   const CONNECTED = {
     linkedin: !!linkedin,
-    facebook: false,
+    facebook: !!facebook,
     instagram: false,
     x: false,
     tiktok: false,
@@ -111,8 +113,6 @@ export default function SocialMediaTool(): JSX.Element {
 
     const entities: LinkedInEntity[] = [];
 
-    // Person
-    // linkedin.linkedin_user_id might be a full urn or an id; normalize to urn.
     let personUrn = String(linkedin.linkedin_user_id || "");
     if (personUrn && !personUrn.startsWith("urn:li:person:")) {
       personUrn = `urn:li:person:${personUrn}`;
@@ -127,11 +127,9 @@ export default function SocialMediaTool(): JSX.Element {
       });
     }
 
-    // Organizations (from oauth response / stored auth)
     const orgs = (linkedin.organizations || linkedin.company_pages || []) as any[];
     if (Array.isArray(orgs)) {
       orgs.forEach((o) => {
-        // o expected shape: { org_urn, org_id, name, logo }
         const urn = o.org_urn || o.provider_org_urn || (o.org_id ? `urn:li:organization:${o.org_id}` : null);
         const id = o.org_id || (urn ? urn.split(":").pop() : "");
         const name = o.name || o.localizedName || `Company ${id}`;
@@ -168,7 +166,7 @@ export default function SocialMediaTool(): JSX.Element {
 
   // BLOCK DISCONNECTED PLATFORMS / SELECT ENTITIES
   const togglePlatform = (id: string) => {
-    // LinkedIn entities are URNs (start with 'urn:li:')
+    // LinkedIn entities (URNs)
     if (id.startsWith("urn:li:")) {
       if (!CONNECTED.linkedin) {
         setErrorMsg("LinkedIn is not connected. Please connect LinkedIn first.");
@@ -178,8 +176,8 @@ export default function SocialMediaTool(): JSX.Element {
       return;
     }
 
-    // Non-linkedin: block if not connected (existing behavior)
-    if (!CONNECTED[id]) {
+    // Non-linkedin: block if not connected
+    if (!CONNECTED[id as keyof typeof CONNECTED]) {
       setErrorMsg(`${ALL_PLATFORMS.find((p) => p.id === id)?.name} is not connected. Please connect first.`);
       return;
     }
@@ -201,10 +199,13 @@ export default function SocialMediaTool(): JSX.Element {
       return;
     }
 
-    // If any selected item is a linkedin urn but linkedin session is missing — block
     const hasLinkedInSelected = selectedPlatforms.some((p) => p.startsWith("urn:li:"));
     if (hasLinkedInSelected && !linkedin) {
       setErrorMsg("You must connect LinkedIn before posting to LinkedIn.");
+      return;
+    }
+    if (selectedPlatforms.includes("facebook") && !facebook) {
+      setErrorMsg("You must connect Facebook before posting to Facebook.");
       return;
     }
 
@@ -212,7 +213,7 @@ export default function SocialMediaTool(): JSX.Element {
     form.append("user_id", user.id);
     form.append("caption", caption);
 
-    // Send platforms[] = mix of urns and platform ids (backend should accept urns for LinkedIn)
+    // Send platforms[] (URNs for LinkedIn, platform ids like 'facebook' for Facebook)
     selectedPlatforms.forEach((p) => form.append("platforms[]", p));
 
     form.append("post_mode", postMode);
@@ -318,9 +319,8 @@ export default function SocialMediaTool(): JSX.Element {
 
             {ALL_PLATFORMS.map((p) => {
               const basicSelected = isSelected(p.id);
-              const isConnected = CONNECTED[p.id];
+              const isConnected = CONNECTED[p.id as keyof typeof CONNECTED];
 
-              // For linkedin we show a special tile that toggles the entities panel below
               if (p.id === "linkedin") {
                 return (
                   <div key={p.id} className={`p-3 rounded-xl border ${!isConnected ? "opacity-50 bg-gray-100" : "bg-white/90 hover:shadow-sm"}`}>
@@ -347,6 +347,31 @@ export default function SocialMediaTool(): JSX.Element {
                       </div>
                     </div>
                   </div>
+                );
+              }
+
+              // Facebook special tile: show connected user or connect status
+              if (p.id === "facebook") {
+                return (
+                  <button
+                    key={p.id}
+                    disabled={!isConnected}
+                    onClick={() => togglePlatform(p.id)}
+                    className={`p-3 rounded-xl border transition ${!isConnected ? "opacity-50 cursor-not-allowed bg-gray-100" : basicSelected ? "scale-105 bg-white shadow-lg" : "bg-white/90 hover:shadow-sm"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`${p.bgColor} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                        <p.icon className={`w-5 h-5 ${p.color}`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-sm">{p.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {isConnected ? `${facebook?.name || "Connected"}` : "Not connected"}
+                        </div>
+                      </div>
+                      {basicSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
+                    </div>
+                  </button>
                 );
               }
 
@@ -385,7 +410,7 @@ export default function SocialMediaTool(): JSX.Element {
                   const sel = isSelected(e.urn);
                   return (
                     <div key={e.urn} className={`p-3 rounded-lg border flex items-center gap-3 ${sel ? "bg-white shadow-md" : "bg-white/95"}`}>
-                      <img src={e.logo || e.logo || undefined} alt={e.name} className="w-10 h-10 rounded object-cover bg-gray-100" />
+                      <img src={e.logo || undefined} alt={e.name} className="w-10 h-10 rounded object-cover bg-gray-100" />
                       <div className="flex-1">
                         <div className="font-medium text-sm">{e.name}</div>
                         <div className="text-xs text-gray-500">{e.type === "person" ? "Personal profile" : "Company Page"}</div>
@@ -416,7 +441,6 @@ export default function SocialMediaTool(): JSX.Element {
           </CardHeader>
 
           <CardContent className="p-6 space-y-4">
-
             {/* CAPTION */}
             <div>
               <Label>Caption *</Label>
@@ -431,12 +455,10 @@ export default function SocialMediaTool(): JSX.Element {
             {/* AI ENHANCEMENT */}
             <div className="flex items-center justify-between py-2">
               <Label className="text-gray-700 font-medium">AI Enhancement</Label>
-
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">
                   {aiEnhance ? "Enabled" : "Disabled"}
                 </span>
-
                 <Switch checked={aiEnhance} onCheckedChange={setAiEnhance} />
               </div>
             </div>
