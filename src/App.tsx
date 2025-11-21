@@ -28,6 +28,8 @@ import AccountSettings from "./pages/base44/AccountSettings";
 import LinkedInCallback from "./pages/linkedin/callback";
 import CreatePost from "./pages/linkedin/create-post";
 
+import FacebookCallback from "./pages/auth/FacebookCallback"; // ✅ ADDED
+
 import NotFound from "./pages/NotFound";
 
 import Login from "./pages/base44/Login";
@@ -37,6 +39,7 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }) => {
   const { isSignedIn, isLoaded } = useUser();
+
   if (!isLoaded)
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -84,7 +87,12 @@ const App = () => (
           <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
+          {/* ⭐ Facebook Callback (Important) */}
+          <Route path="/facebook/callback" element={<ProtectedRoute><FacebookCallback /></ProtectedRoute>} />
+
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
