@@ -8,7 +8,7 @@ export default function FacebookDirectCallback() {
 
     // Send real Facebook code to n8n
     if (code) {
-      fetch(import.meta.env.VITE_N8N_WEBHOOK_URL_FACEBOOK + "/oauth-facebook", {
+      fetch(import.meta.env.VITE_N8N_WEBHOOK_URL + "/oauth-facebook", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
