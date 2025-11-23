@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CheckCircle2, Linkedin, LogOut } from 'lucide-react';
+// src/components/LinkedInConnectButton.tsx
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Linkedin, CheckCircle2, LogOut } from "lucide-react";
 
 import {
   initiateLinkedInAuth,
@@ -10,31 +11,33 @@ import {
   isLinkedInConnected,
   clearLinkedInAuthData,
   type LinkedInAuthData,
-} from '@/utils/linkedinOAuth';
+} from "@/utils/linkedinOAuth";
 
 import { getUserId } from "@/utils/userIdentity";
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 export function LinkedInConnectButton() {
   const [authData, setAuthData] = useState<LinkedInAuthData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load stored auth
   useEffect(() => {
-    const saved = getLinkedInAuthData();
-    if (saved) setAuthData(saved);
+    const stored = getLinkedInAuthData();
+    if (stored) setAuthData(stored);
   }, []);
 
-  // Start LinkedIn OAuth
   const handleConnect = async () => {
     setIsLoading(true);
-
     try {
-      const userId = getUserId(); // SaaS user identity
+      const userId = getUserId();
+      if (!userId) {
+        toast.error("You must be logged in to connect LinkedIn.");
+        setIsLoading(false);
+        return;
+      }
       initiateLinkedInAuth(userId);
-    } catch (error) {
-      console.error("Failed to start LinkedIn auth:", error);
-      toast.error("Failed to start authentication");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to start LinkedIn authentication");
       setIsLoading(false);
     }
   };
@@ -46,7 +49,7 @@ export function LinkedInConnectButton() {
   };
 
   // ===========================
-  // Connected UI
+  // Connected UI (Mirrors Facebook)
   // ===========================
   if (authData && isLinkedInConnected()) {
     return (
@@ -68,7 +71,7 @@ export function LinkedInConnectButton() {
             <AvatarImage src={authData.profilePicture || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground text-xl">
               {authData.firstName?.charAt(0) ?? "?"}
-              {authData.lastName?.charAt(0) ?? "?"}
+              {authData.lastName?.charAt(0) ?? ""}
             </AvatarFallback>
           </Avatar>
 
@@ -86,11 +89,17 @@ export function LinkedInConnectButton() {
 
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-medium mb-2">Permissions</h4>
+
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p>✓ Profile access</p>
-            <p>✓ Email access</p>
-            <p>✓ Posting permission</p>
-            <p>✓ Synced with automation (n8n)</p>
+            {authData.permissions?.length ? (
+              authData.permissions.map((p) => <div key={p}>• {p}</div>)
+            ) : (
+              <>
+                <div>• Profile access</div>
+                <div>• Email access</div>
+                <div>• Posting permission</div>
+              </>
+            )}
           </div>
         </div>
       </Card>
@@ -98,7 +107,7 @@ export function LinkedInConnectButton() {
   }
 
   // ===========================
-  // Not connected UI
+  // Not Connected UI (Mirrors Facebook)
   // ===========================
   return (
     <Card className="p-8 max-w-2xl mx-auto text-center">
@@ -117,13 +126,13 @@ export function LinkedInConnectButton() {
         onClick={handleConnect}
         disabled={isLoading}
         size="lg"
-        className="gap-2 text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+        className="gap-2 text-lg px-8 py-6 bg-primary text-white hover:bg-primary/90"
       >
         <Linkedin className="h-6 w-6" />
         {isLoading ? "Connecting…" : "Connect LinkedIn"}
       </Button>
 
-      <div className="mt-8 text-sm text-muted-foreground">
+      <div className="mt-6 text-sm text-muted-foreground">
         <p className="mb-2">This app will:</p>
         <ul className="space-y-1">
           <li>• Access your profile</li>
