@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 
+// Layout + Public Pages
 import Layout from "./pages/base44/Layout";
 import Home from "./pages/base44/Home";
 import About from "./pages/base44/About";
@@ -18,6 +19,7 @@ import StarterPlan from "./pages/base44/StarterPlan";
 import ProPlan from "./pages/base44/ProPlan";
 import StripeCheckout from "./pages/base44/StripeCheckout";
 
+// Dashboard Tools
 import Dashboard from "./pages/base44/Dashboard";
 import LeadsTool from "./pages/base44/LeadsTool";
 import SocialMediaTool from "./pages/base44/SocialMediaTool";
@@ -25,13 +27,14 @@ import EmailCampaignTool from "./pages/base44/EmailCampaignTool";
 import AnalyticsTool from "./pages/base44/AnalyticsTool";
 import AccountSettings from "./pages/base44/AccountSettings";
 
+// OAuth Callback Pages
 import LinkedInCallback from "./pages/linkedin/callback";
 import CreatePost from "./pages/linkedin/create-post";
+import FacebookCallback from "./pages/auth/FacebookCallback";
+import InstagramCallback from "./pages/auth/InstagramCallback";   // ✅ NEW
 
-import FacebookCallback from "./pages/auth/FacebookCallback"; // ✅ ADDED
-
+// Other
 import NotFound from "./pages/NotFound";
-
 import Login from "./pages/base44/Login";
 import SignupPage from "./pages/base44/Signup";
 
@@ -58,7 +61,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
 
-          {/* Public */}
+          {/* ====================== */}
+          {/* PUBLIC WEBSITE PAGES   */}
+          {/* ====================== */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
@@ -71,11 +76,13 @@ const App = () => (
           <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
           <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          {/* Auth */}
+          {/* AUTH */}
           <Route path="/login" element={<Login />} />
           <Route path="/sign-up/*" element={<SignupPage />} />
 
-          {/* Dashboard */}
+          {/* =============================== */}
+          {/* DASHBOARD (PROTECTED ROUTES)   */}
+          {/* =============================== */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/social-posts" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
           <Route path="/email-campaigns" element={<ProtectedRoute><EmailCampaignTool /></ProtectedRoute>} />
@@ -83,15 +90,23 @@ const App = () => (
           <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-          {/* LinkedIn */}
+          {/* =============================== */}
+          {/* LINKEDIN OAUTH + PAGES         */}
+          {/* =============================== */}
           <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
-          {/* ⭐ Facebook Callback (Important) */}
+          {/* =============================== */}
+          {/* FACEBOOK OAUTH                 */}
+          {/* =============================== */}
           <Route path="/facebook/callback" element={<FacebookCallback />} />
 
+          {/* =============================== */}
+          {/* INSTAGRAM OAUTH (NEW!)         */}
+          {/* =============================== */}
+          <Route path="/instagram/callback" element={<InstagramCallback />} />   {/* ✅ FIXED */}
 
-          {/* 404 */}
+          {/* 404 PAGE */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>
